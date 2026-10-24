@@ -170,247 +170,192 @@ export default function Schedule() {
   }
 
   return (
-    <div className="page-content">
-      <div className="section-header">
-        <div>
-          <span className="hero-eyebrow" style={{ marginBottom: '6px', display: 'block' }}>SHARED LIVING, SORTED.</span>
-          <h2 className="page-title">📅 Schedules & Availability</h2>
-          <p className="page-subtitle">University classes & offline hours used to fairly balance chores</p>
-        </div>
-        <button 
-          className="btn btn-primary btn-sm"
-          onClick={handleAutoBalanceChores}
-          disabled={saving}
-          title="Assigns chores to days when flatmates are free"
-        >
-          ⚖️ Auto-Balance Chores
-        </button>
-      </div>
-
-      <div className="alert alert-info">
-        <span className="banner-icon">ℹ️</span>
-        <div>
-          <strong>Privacy & Focus Note</strong>
-          <p>Class schedules are used <em>solely</em> to determine free windows for fair chore allocation. Roomie never sends class alerts.</p>
-        </div>
-      </div>
+    <div className="mobile-page-container">
+      {/* Page Header */}
+      <div className="page-meta-eyebrow">Your classes and shifts help share chores fairly</div>
+      <h1 className="page-headline">Schedule</h1>
 
       {statusMessage && (
-        <div className="alert alert-success" style={{ marginBottom: '16px' }}>
+        <div className="status-toast-pill">
           {statusMessage}
         </div>
       )}
 
-      {/* Member Selection Tabs */}
-      <div className="member-tabs-bar">
-        {members.map(m => (
-          <button
-            key={m.uid}
-            className={`member-tab-pill ${m.uid === activeTabMemberId ? 'active' : ''}`}
-            onClick={() => setActiveTabMemberId(m.uid)}
-          >
-            <span className="member-avatar-mini">
-              {(m.displayName || m.email || 'M')[0].toUpperCase()}
-            </span>
-            <span>{m.displayName || m.email?.split('@')[0]}</span>
-            {m.uid === user?.uid && <span className="you-badge">(You)</span>}
-          </button>
-        ))}
+      {/* Private by default Blue Notice Box */}
+      <div className="info-notice-card-blue">
+        <div className="notice-title-bold">Private by default</div>
+        <div className="notice-desc-text">
+          Schedules are only used to find free windows for chores. Roomie never sends class alerts.
+        </div>
       </div>
 
-      {/* Quick Timetable Presets */}
-      {(isEditingMySchedule || isAdmin) && currentMemberSchedule.length === 0 && (
-        <div className="card quick-preset-card">
-          <h4>Need a quick start?</h4>
-          <p>Pre-load standard Dublin student timetables:</p>
-          <div className="preset-btn-group">
-            <button className="btn btn-secondary btn-sm" onClick={() => handleLoadSampleSchedule('ninaad')}>
-              Load Ninaad's Timetable
+      {/* Flatmate Selection Pills */}
+      <div className="member-filter-row">
+        {members.map(m => {
+          const isSelected = m.uid === activeTabMemberId
+          const isMe = m.uid === user?.uid
+          const name = m.displayName || m.email?.split('@')[0] || 'Member'
+          const label = isMe ? `${name} (you)` : name
+
+          return (
+            <button
+              key={m.uid}
+              className={`filter-pill-capsule ${isSelected ? 'active-black' : 'inactive-outline'}`}
+              onClick={() => setActiveTabMemberId(m.uid)}
+            >
+              {label}
             </button>
-            <button className="btn btn-secondary btn-sm" onClick={() => handleLoadSampleSchedule('steve')}>
-              Load Steve's Timetable
+          )
+        })}
+      </div>
+
+      {/* Auto-balance chores action button */}
+      <button 
+        className="btn-primary-green full-width"
+        onClick={handleAutoBalanceChores}
+        disabled={saving}
+        style={{ marginTop: '16px', marginBottom: '24px' }}
+      >
+        Auto–balance chores
+      </button>
+
+      {/* Quick Timetable Presets if empty */}
+      {currentMemberSchedule.length === 0 && (
+        <div className="wire-card" style={{ marginBottom: '20px' }}>
+          <h3 className="wire-card-title" style={{ fontSize: '15px' }}>Need sample commitments?</h3>
+          <p className="wire-card-sub">Pre-fill schedule for Dublin university student / work:</p>
+          <div className="preset-btn-group" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
+            <button className="btn-outline-pill-sm" onClick={() => handleLoadSampleSchedule('ninaad')}>
+              Load Ninaad's sample
             </button>
-            <button className="btn btn-secondary btn-sm" onClick={() => handleLoadSampleSchedule('christy')}>
-              Load Christy's Timetable
+            <button className="btn-outline-pill-sm" onClick={() => handleLoadSampleSchedule('steve')}>
+              Load Steve's sample
+            </button>
+            <button className="btn-outline-pill-sm" onClick={() => handleLoadSampleSchedule('christy')}>
+              Load Christy's sample
             </button>
           </div>
         </div>
       )}
 
-      {/* Daily Free-Time Heat Map */}
-      <div className="card">
-        <h3 className="card-title">Weekly Availability</h3>
-        <p className="card-subtitle">Free (Green) • Partial Day (Yellow) • Busy (Red)</p>
+      {/* Weekly availability */}
+      <div className="wire-card" style={{ marginBottom: '20px' }}>
+        <h2 className="wire-card-title" style={{ marginBottom: '16px' }}>Weekly availability</h2>
 
-        <div className="days-score-grid">
+        <div className="availability-table-list">
           {DAYS_OF_WEEK.map(day => {
             const avail = getMemberDayAvailability(currentMemberSchedule, day)
+            const dayShort = day.slice(0, 3)
 
             return (
-              <div key={day} className={`day-score-pill status-${avail.status}`}>
-                <span className="day-name">{day.slice(0, 3)}</span>
-                <span className={`status-pill-badge badge-${avail.status}`}>
+              <div key={day} className="availability-table-row">
+                <span className="availability-day-name">{dayShort}</span>
+                <span className={`status-tag-badge status-tag-${avail.status}`}>
                   {avail.label}
                 </span>
-                {avail.busyHours > 0 && (
-                  <small className="day-hours-desc">{avail.busyHours}h booked</small>
-                )}
               </div>
             )
           })}
         </div>
       </div>
 
-      {/* Commitments List */}
-      <div className="card">
-        <div className="card-header-action">
+      {/* Commitments */}
+      <div className="wire-card">
+        <div className="wire-card-header-row">
           <div>
-            <h3 className="card-title">Recurring Commitments</h3>
-            <p className="card-subtitle">Offline classes, lectures, church, work shifts</p>
+            <h2 className="wire-card-title">Commitments</h2>
+            <p className="wire-card-sub" style={{ marginTop: '2px' }}>Lectures, work shifts, anything that repeats.</p>
           </div>
-          {(isEditingMySchedule || isAdmin) && (
-            <button className="btn btn-primary btn-sm" onClick={() => setShowAddForm(true)}>
-              + Add Commitment
-            </button>
-          )}
+          <button 
+            className="btn-outline-pill-sm"
+            onClick={() => setShowAddForm(prev => !prev)}
+          >
+            + Add
+          </button>
         </div>
 
-        {currentMemberSchedule.length === 0 ? (
-          <div className="empty-state">
-            <span className="empty-icon">🏖️</span>
-            <h4>No commitments logged</h4>
-            <p>This flatmate is currently marked as having full weekly free availability.</p>
-          </div>
-        ) : (
-          <div className="commitment-list">
-            {DAYS_OF_WEEK.map(day => {
-              const dayBlocks = currentMemberSchedule.filter(b => b.day === day)
-              if (dayBlocks.length === 0) return null
-
-              return (
-                <div key={day} className="day-group">
-                  <h4 className="day-group-header">{day}</h4>
-                  <div className="day-blocks">
-                    {dayBlocks.map(block => (
-                      <div key={block.id} className="commitment-block">
-                        <div className="block-badge-icon">
-                          {block.mode === 'offline' ? '🎒' : block.mode === 'church' ? '⛪' : '💻'}
-                        </div>
-                        <div className="block-details">
-                          <strong>{block.title}</strong>
-                          <span className="block-time">
-                            ⏰ {block.startTime} – {block.endTime} 
-                            {block.travelBuffer > 0 && ` (+${block.travelBuffer}m commute)`}
-                          </span>
-                          <span className="block-mode-tag">{block.mode}</span>
-                        </div>
-                        {(isEditingMySchedule || isAdmin) && (
-                          <button 
-                            className="btn-delete-mini"
-                            onClick={() => handleDeleteBlock(block.id)}
-                            title="Delete commitment"
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Add Commitment Modal */}
-      {showAddForm && (
-        <div className="modal-backdrop" onClick={() => setShowAddForm(false)}>
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Add Commitment</h3>
-              <button className="modal-close-btn" onClick={() => setShowAddForm(false)}>✕</button>
+        {/* Inline Add Commitment Form */}
+        {showAddForm && (
+          <form onSubmit={handleAddBlock} className="inline-add-commitment-form">
+            <div className="form-group-block">
+              <input
+                type="text"
+                placeholder="Commitment title (e.g. Lecture, Lab, Work shift)"
+                value={blockTitle}
+                onChange={e => setBlockTitle(e.target.value)}
+                required
+                className="clean-text-input"
+              />
             </div>
 
-            <form onSubmit={handleAddBlock} className="modal-form">
-              <div className="form-group">
-                <label>Day of Week</label>
-                <select value={blockDay} onChange={e => setBlockDay(e.target.value)}>
-                  {DAYS_OF_WEEK.map(d => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-              </div>
+            <div className="form-row-compact">
+              <select 
+                value={blockDay} 
+                onChange={e => setBlockDay(e.target.value)}
+                className="clean-select"
+              >
+                {DAYS_OF_WEEK.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
 
-              <div className="form-group">
-                <label>Description / Class Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. University Offline Lectures / Lab"
-                  value={blockTitle}
-                  onChange={e => setBlockTitle(e.target.value)}
-                  required
+              <div className="time-range-wrap">
+                <input 
+                  type="time" 
+                  value={blockStartTime} 
+                  onChange={e => setBlockStartTime(e.target.value)}
+                  className="clean-time-input" 
+                />
+                <span>to</span>
+                <input 
+                  type="time" 
+                  value={blockEndTime} 
+                  onChange={e => setBlockEndTime(e.target.value)}
+                  className="clean-time-input" 
                 />
               </div>
+            </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Start Time</label>
-                  <input
-                    type="time"
-                    value={blockStartTime}
-                    onChange={e => setBlockStartTime(e.target.value)}
-                    required
-                  />
+            <div className="form-action-row" style={{ marginTop: '12px' }}>
+              <button type="submit" className="btn-primary-green btn-sm" disabled={saving}>
+                Save commitment
+              </button>
+              <button 
+                type="button" 
+                className="btn-outline-pill-sm" 
+                onClick={() => setShowAddForm(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        <div className="commitments-clean-list">
+          {currentMemberSchedule.length === 0 ? (
+            <div className="empty-subtext" style={{ padding: '16px 0', color: '#71717a' }}>
+              No commitments added yet. Flatmate is marked free all week.
+            </div>
+          ) : (
+            currentMemberSchedule.map(block => (
+              <div key={block.id} className="commitment-clean-item">
+                <div className="commitment-info">
+                  <div className="commitment-title">{block.title}</div>
+                  <div className="commitment-time">
+                    {block.day.slice(0, 3)} · {block.startTime}–{block.endTime}
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>End Time</label>
-                  <input
-                    type="time"
-                    value={blockEndTime}
-                    onChange={e => setBlockEndTime(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
 
-              <div className="form-group">
-                <label>Commitment Mode</label>
-                <select value={blockMode} onChange={e => setBlockMode(e.target.value)}>
-                  <option value="offline">Offline / On Campus (Requires Travel)</option>
-                  <option value="online">Online / Zoom (At Home)</option>
-                  <option value="church">Church / Community</option>
-                  <option value="work">Work / Part-time Shift</option>
-                </select>
-              </div>
-
-              {blockMode === 'offline' && (
-                <div className="form-group">
-                  <label>Dublin Commute Buffer (Minutes each way)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="120"
-                    step="5"
-                    value={travelBuffer}
-                    onChange={e => setTravelBuffer(e.target.value)}
-                  />
-                  <small className="help-text">Added before & after class so chores aren't assigned while you travel.</small>
-                </div>
-              )}
-
-              <div className="form-actions">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowAddForm(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  Save Commitment
+                <button 
+                  className="btn-delete-subtle"
+                  onClick={() => handleDeleteBlock(block.id)}
+                  title="Remove commitment"
+                >
+                  ✕
                 </button>
               </div>
-            </form>
-          </div>
+            ))
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }

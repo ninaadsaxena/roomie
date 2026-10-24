@@ -89,136 +89,142 @@ export default function Bins() {
   }
 
   return (
-    <div className="page-content">
-      <div className="section-header">
-        <div>
-          <span className="hero-eyebrow" style={{ marginBottom: '6px', display: 'block' }}>SHARED LIVING, SORTED.</span>
-          <h2 className="page-title">🗑️ Dublin Waste & Bins</h2>
-          <p className="page-subtitle">Alternating Tuesday collections • Dublin 7 Rotation Schedule</p>
-        </div>
-        {isAdmin && (
-          <button className="btn btn-secondary btn-sm" onClick={switchStartingType} disabled={updating}>
-            🔄 Invert Rotation Cycle
-          </button>
-        )}
-      </div>
+    <div className="mobile-page-container">
+      {/* Page Header */}
+      <div className="page-meta-eyebrow">Tuesday morning collection</div>
+      <h1 className="page-headline">Dublin bins</h1>
 
-      {/* Main Focus Card */}
-      <div className={`bin-hero-card ${currentBinInfo.binType === 'green' ? 'card-green' : 'card-brown-black'}`}>
-        <div className="bin-hero-content">
-          <div className="bin-badge-tag">
-            <span>{currentBinInfo.icon} NEXT COLLECTION</span>
+      {/* Hero Green Bin Card */}
+      <div className="bins-hero-green-card">
+        <div className="bin-card-eyebrow-yellow">THIS WEEK</div>
+        <h2 className="bin-card-title-white">
+          {currentBinInfo.binType === 'green' ? 'Green bins and white bags' : 'Brown and black bins'}
+        </h2>
+        <p className="bin-card-sub-white">
+          {currentBinInfo.binType === 'green'
+            ? 'Recycling: clean paper, cardboard, plastics and tins.'
+            : 'Food scraps, compostable waste, and general household rubbish.'}
+        </p>
+
+        <div className="bin-card-meta-columns">
+          <div className="bin-meta-col">
+            <span className="bin-meta-sublabel">Put out</span>
+            <span className="bin-meta-mainlabel">{currentBinInfo.putOutDateFormatted}</span>
           </div>
-          <h2 className="bin-hero-title">{currentBinInfo.title}</h2>
-          <p className="bin-hero-desc">{currentBinInfo.description}</p>
-          
-          <div className="bin-meta-row">
-            <div className="bin-meta-item">
-              <span className="meta-label">Put Out Monday Night:</span>
-              <span className="meta-value">{currentBinInfo.putOutDateFormatted}</span>
-            </div>
-            <div className="bin-meta-item">
-              <span className="meta-label">Collection Morning:</span>
-              <span className="meta-value">{currentBinInfo.collectionDateFormatted}</span>
-            </div>
+          <div className="bin-meta-col">
+            <span className="bin-meta-sublabel">Collected</span>
+            <span className="bin-meta-mainlabel">{currentBinInfo.collectionDateFormatted}</span>
           </div>
         </div>
 
-        <div className="bin-actions-grid">
+        <div className="bin-hero-actions-row">
           <button 
-            className={`btn ${binConfig.putOutDone ? 'btn-success' : 'btn-primary'}`}
+            className="btn-hero-yellow"
             onClick={togglePutOut}
             disabled={updating}
           >
-            {binConfig.putOutDone ? '✅ Put Out Monday Night' : '🚪 Put Out Bins'}
+            {binConfig.putOutDone ? 'Bins are out ✓' : 'Put bins out'}
           </button>
-
           <button 
-            className={`btn ${binConfig.broughtInDone ? 'btn-success' : 'btn-outline'}`}
+            className="btn-hero-green-subtle"
             onClick={toggleBroughtIn}
             disabled={updating}
           >
-            {binConfig.broughtInDone ? '✅ Brought In Tuesday' : '🏡 Bring Bins In'}
+            {binConfig.broughtInDone ? 'Bins brought in ✓' : 'Bring bins in'}
           </button>
         </div>
-
-        <div className="bin-status-footer">
-          {binConfig.lastPutOutBy && (
-            <span>Put out by <strong>{binConfig.lastPutOutBy}</strong></span>
-          )}
-          {binConfig.lastBroughtInBy && (
-            <span>Brought in by <strong>{binConfig.lastBroughtInBy}</strong></span>
-          )}
-        </div>
       </div>
 
-      {/* 4-Week Rotation Forecast */}
-      <div className="card">
-        <h3 className="card-title">📅 4-Week Collection Forecast</h3>
-        <p className="card-subtitle">Upcoming Tuesday morning collections</p>
+      {/* Wrong week swap button */}
+      <button 
+        className="btn-outline-pill full-width"
+        onClick={switchStartingType}
+        disabled={updating}
+        style={{ marginTop: '16px', marginBottom: '28px' }}
+      >
+        Wrong week? Swap the rotation
+      </button>
 
-        <div className="forecast-timeline">
-          {upcomingWeeks.map((week, idx) => (
-            <div key={idx} className={`timeline-row ${week.isCurrent ? 'active' : ''}`}>
-              <div className="timeline-date">
-                <span className="t-day">{week.dateFormatted.split(',')[0]}</span>
-                <span className="t-full">{week.dateFormatted.split(',')[1]}</span>
-              </div>
-              <div className="timeline-dot"></div>
-              <div className={`timeline-card ${week.binType === 'green' ? 'border-green' : 'border-brown-black'}`}>
-                <div className="t-header">
-                  <span className="t-icon">{week.icon}</span>
-                  <strong>{week.title}</strong>
-                  {week.isCurrent && <span className="current-badge">THIS WEEK</span>}
+      {/* Next four Tuesdays */}
+      <div className="section-clean-group" style={{ marginBottom: '32px' }}>
+        <h2 className="wire-card-title" style={{ marginBottom: '14px' }}>Next four Tuesdays</h2>
+
+        <div className="tuesdays-timeline-list">
+          {upcomingWeeks.map((week, idx) => {
+            const isRecycling = week.binType === 'green'
+            const dateStr = format(week.date, 'EEE d MMM')
+
+            return (
+              <div key={idx} className="tuesday-row-item">
+                <span className="tuesday-date-str">{dateStr}</span>
+
+                <div className="tuesday-type-wrap">
+                  {isRecycling ? (
+                    <>
+                      <span className="color-box-indicator color-box-green"></span>
+                      <span className="tuesday-type-label">Recycling</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="color-box-indicator color-box-brown"></span>
+                      <span className="color-box-indicator color-box-black"></span>
+                      <span className="tuesday-type-label">Food and general</span>
+                    </>
+                  )}
                 </div>
-                <small className="t-note">
-                  {week.binType === 'green' ? 'Dry Recyclables & Clean Packaging' : 'Organic Food Waste & General Trash'}
-                </small>
+
+                {week.isCurrent && (
+                  <span className="badge-this-week-yellow">
+                    This week
+                  </span>
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
-      {/* Dublin Waste Sorting Guide */}
-      <div className="card">
-        <h3 className="card-title">💡 Dublin Waste Sorting Cheatsheet</h3>
-        <div className="sorting-guide-grid">
-          <div className="guide-box guide-green">
-            <h4>♻️ Green Bin / White Bags</h4>
-            <span className="guide-subtitle">Dry Mixed Recyclables</span>
-            <ul>
-              <li>Clean plastic bottles & containers</li>
-              <li>Paper, cartons, cereal boxes, newspaper</li>
-              <li>Clean aluminum cans & foil trays</li>
-              <li>Cardboard packaging flattened</li>
-              <li><strong>NO</strong> food residue or wet waste!</li>
-            </ul>
-          </div>
+      {/* What goes where */}
+      <div className="section-clean-group">
+        <h2 className="wire-card-title" style={{ marginBottom: '14px' }}>What goes where</h2>
 
-          <div className="guide-box guide-brown">
-            <h4>🟫 Brown Bin</h4>
-            <span className="guide-subtitle">Food & Compostable</span>
-            <ul>
-              <li>Fruit & vegetable peelings</li>
-              <li>Cooked & raw food scraps</li>
-              <li>Eggshells, tea bags, coffee grounds</li>
-              <li>Paper towels & napkins</li>
-            </ul>
-          </div>
+        {/* 1. Green bin and white bags */}
+        <div className="what-goes-card accent-border-green">
+          <h3 className="what-goes-title">Green bin and white bags</h3>
+          <p className="what-goes-sub">Dry recycling. Never food or wet waste.</p>
+          <ul className="what-goes-bullet-list">
+            <li>Clean plastic bottles and containers</li>
+            <li>Paper, cartons, cereal boxes, newspaper</li>
+            <li>Clean aluminium cans and foil trays</li>
+            <li>Flattened cardboard</li>
+          </ul>
+        </div>
 
-          <div className="guide-box guide-black">
-            <h4>⬛ Black Bin</h4>
-            <span className="guide-subtitle">General Waste</span>
-            <ul>
-              <li>Non-recyclable plastic packaging</li>
-              <li>Sanitary waste & wipes</li>
-              <li>Broken ceramics & glassware</li>
-              <li>General household garbage</li>
-            </ul>
-          </div>
+        {/* 2. Brown bin */}
+        <div className="what-goes-card accent-border-brown">
+          <h3 className="what-goes-title">Brown bin</h3>
+          <p className="what-goes-sub">Food and compostables.</p>
+          <ul className="what-goes-bullet-list">
+            <li>Fruit and veg peelings</li>
+            <li>Cooked and raw food scraps</li>
+            <li>Eggshells, tea bags, coffee grounds</li>
+            <li>Paper towels and napkins</li>
+          </ul>
+        </div>
+
+        {/* 3. Black bin */}
+        <div className="what-goes-card accent-border-black">
+          <h3 className="what-goes-title">Black bin</h3>
+          <p className="what-goes-sub">General waste.</p>
+          <ul className="what-goes-bullet-list">
+            <li>Non–recyclable plastic packaging</li>
+            <li>Sanitary waste and wipes</li>
+            <li>Broken ceramics and glassware</li>
+            <li>General household rubbish</li>
+          </ul>
         </div>
       </div>
     </div>
   )
 }
+

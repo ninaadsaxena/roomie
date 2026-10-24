@@ -1,17 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import QRCode from 'qrcode'
-import { doc, updateDoc, arrayRemove, setDoc } from 'firebase/firestore'
+import { doc, updateDoc, setDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { useAuth } from '../context/AuthContext'
 import { useGroup } from '../context/GroupContext'
+import { logOut } from '../firebase/auth'
 import LoadingSpinner from '../components/LoadingSpinner'
-import NotificationPrompt from '../components/NotificationPrompt'
 
 export default function Settings() {
   const { user, updateUserProfile } = useAuth()
   const { group, members, loadingGroup } = useGroup()
+  const navigate = useNavigate()
+
   const [copySuccess, setCopySuccess] = useState(false)
   const [updating, setUpdating] = useState(false)
+  const [alertsEnabled, setAlertsEnabled] = useState(false)
   const [statusMessage, setStatusMessage] = useState(null)
   const qrCanvasRef = useRef(null)
 
@@ -23,17 +27,17 @@ export default function Settings() {
   // New amenity state
   const [showAddAmenity, setShowAddAmenity] = useState(false)
   const [newAmenityName, setNewAmenityName] = useState('')
-  const [newAmenityIcon, setNewAmenityIcon] = useState('🧺')
+  const [newAmenityIcon, setNewAmenityIcon] = useState('🍳')
 
   const inviteUrl = group ? `${window.location.origin}/join/${group.inviteCode}` : ''
 
   useEffect(() => {
     if (group?.inviteCode && qrCanvasRef.current) {
       QRCode.toCanvas(qrCanvasRef.current, inviteUrl, {
-        width: 180,
-        margin: 2,
+        width: 160,
+        margin: 1,
         color: {
-          dark: '#156d43',
+          dark: '#1b633e',
           light: '#ffffff'
         }
       }, (error) => {
@@ -42,27 +46,38 @@ export default function Settings() {
     }
   }, [group?.inviteCode, inviteUrl])
 
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      setAlertsEnabled(true)
+    }
+  }, [])
+
   if (loadingGroup || !group) {
-    return <LoadingSpinner message="Loading flat settings..." />
+    return <LoadingSpinner message="Loading house settings..." />
   }
 
   const isAdmin = group.adminUid === user?.uid
 
-  const handleCopyInvite = () => {
-    navigator.clipboard.writeText(inviteUrl)
-    setCopySuccess(true)
-    setTimeout(() => setCopySuccess(false), 3000)
+  const handleCopyInvite = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteUrl)
+      setCopySuccess(true)
+      setTimeout(() => setCopySuccess(false), 2500)
+    } catch {
+      setCopySuccess(true)
+      setTimeout(() => setCopySuccess(false), 2500)
+    }
   }
 
   const handleToggleInspectionWeek = async () => {
-    if (!isAdmin) return
     try {
       setUpdating(true)
       const nextState = !group.inspectionWeek
       await updateDoc(doc(db, 'groups', group.id), {
         inspectionWeek: nextState
       })
-      setStatusMessage(nextState ? "Inspection Week activated!" : "Inspection Week concluded.")
+      setStatusMessage(nextState ? "Inspection week started!" : "Inspection week ended.")
+      setTimeout(() => setStatusMessage(null), 3000)
     } catch (e) {
       console.error(e)
     } finally {
@@ -70,22 +85,20 @@ export default function Settings() {
     }
   }
 
-  const handleUpdateGender = async (gender) => {
-    try {
-      setUpdating(true)
-      await updateUserProfile({ gender })
-      // Update member in group subcollection
-      await setDoc(doc(db, 'groups', group.id, 'members', user.uid), { gender }, { merge: true })
-      setStatusMessage("Room preference updated!")
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setUpdating(false)
+  const handleRequestAlerts = async () => {
+    if (!('Notification' in window)) {
+      alert("Push alerts are not supported in this browser.")
+      return
+    }
+    const permission = await Notification.requestPermission()
+    if (permission === 'granted') {
+      setAlertsEnabled(true)
+      setStatusMessage("Alerts turned on for this device!")
+      setTimeout(() => setStatusMessage(null), 3000)
     }
   }
 
-  const handleSaveAmenitySettings = async (amenityId) => {
-    if (!isAdmin) return
+  const handleSaveAmenity = async (amenityId) => {
     try {
       setUpdating(true)
       const updatedAmenities = (group.amenities || []).map(a => {
@@ -93,18 +106,13 @@ export default function Settings() {
           return {
             ...a,
             slotDurationHours: Number(slotDuration),
-            maxBookingsPerDay: Number(maxBookings),
-            lastModifiedAt: new Date().toISOString()
+            maxBookingsPerDay: Number(maxBookings)
           }
         }
         return a
       })
-
-      await updateDoc(doc(db, 'groups', group.id), {
-        amenities: updatedAmenities
-      })
+      await updateDoc(doc(db, 'groups', group.id), { amenities: updatedAmenities })
       setEditingAmenityId(null)
-      setStatusMessage("Amenity rules updated! (48-hr staging rule preserved for active slots)")
     } catch (e) {
       console.error(e)
     } finally {
@@ -112,10 +120,9 @@ export default function Settings() {
     }
   }
 
-  const handleCreateAmenity = async (e) => {
+  const handleAddAmenitySubmit = async (e) => {
     e.preventDefault()
-    if (!newAmenityName.trim() || !isAdmin) return
-
+    if (!newAmenityName.trim()) return
     try {
       setUpdating(true)
       const newAmenity = {
@@ -124,15 +131,12 @@ export default function Settings() {
         icon: newAmenityIcon,
         slotDurationHours: 1,
         maxBookingsPerDay: 2,
-        active: true,
-        createdAt: new Date().toISOString()
+        active: true
       }
-
       const updated = [...(group.amenities || []), newAmenity]
       await updateDoc(doc(db, 'groups', group.id), { amenities: updated })
       setShowAddAmenity(false)
       setNewAmenityName('')
-      setStatusMessage(`Added ${newAmenity.name}!`)
     } catch (e) {
       console.error(e)
     } finally {
@@ -140,192 +144,161 @@ export default function Settings() {
     }
   }
 
-  return (
-    <div className="page-content">
-      <div className="section-header">
-        <div>
-          <span className="hero-eyebrow" style={{ marginBottom: '6px', display: 'block' }}>SHARED LIVING, SORTED.</span>
-          <h2 className="page-title">⚙️ House & Flatmates</h2>
-          <p className="page-subtitle">{group.name} • Manage flat members, QR code, and house rules</p>
-        </div>
-      </div>
+  const handleSignOut = async () => {
+    await logOut()
+    navigate('/login')
+  }
 
-      {/* Push Notifications Settings */}
-      <NotificationPrompt />
+  // Format invite code with spaces e.g. "F Y Z 7 M H"
+  const formattedCode = (group.inviteCode || 'ROOMIE')
+    .toUpperCase()
+    .split('')
+    .join(' ')
+
+  const activeAmenities = (group.amenities && group.amenities.length > 0) 
+    ? group.amenities 
+    : [
+        {
+          id: 'kitchen',
+          name: 'Kitchen and stove',
+          slotDurationHours: 1,
+          maxBookingsPerDay: 2
+        }
+      ]
+
+  return (
+    <div className="mobile-page-container">
+      {/* Page Header */}
+      <div className="page-meta-eyebrow">Flatmates, invites and house rules</div>
+      <h1 className="page-headline">House</h1>
 
       {statusMessage && (
-        <div className="alert alert-success" style={{ marginBottom: '16px' }}>
+        <div className="status-toast-pill">
           {statusMessage}
         </div>
       )}
 
-      {/* Invite Flatmates Section */}
-      <div className="card invite-card">
-        <h3 className="card-title">💌 Invite Flatmates</h3>
-        <p className="card-subtitle">Scan QR code or share 6-character invite code</p>
+      {/* 1. Invite flatmates card */}
+      <div className="wire-card invite-card-clean">
+        <h2 className="wire-card-title center-title">Invite flatmates</h2>
+        <p className="wire-card-sub center-sub">Scan the QR code or share the 6–character code</p>
 
-        <div className="qr-container-box">
-          <canvas ref={qrCanvasRef} className="qr-canvas"></canvas>
-          <div className="invite-code-display">
-            <span className="code-label">Invite Code:</span>
-            <span className="code-value">{group.inviteCode}</span>
-          </div>
-          <button className="btn btn-primary" onClick={handleCopyInvite}>
-            {copySuccess ? '✅ Link Copied!' : '📋 Copy Invite Link'}
-          </button>
+        <div className="qr-dashed-box">
+          <canvas ref={qrCanvasRef} className="qr-clean-canvas"></canvas>
         </div>
+
+        <div className="invite-large-code">
+          {formattedCode}
+        </div>
+
+        <button 
+          className="btn-primary-green full-width"
+          onClick={handleCopyInvite}
+        >
+          {copySuccess ? 'Copied to clipboard!' : 'Copy invite link'}
+        </button>
       </div>
 
-      {/* Flatmates Roster */}
-      <div className="card">
-        <h3 className="card-title">👥 Flatmates Roster ({members.length}/10)</h3>
-        <p className="card-subtitle">Room assignments dictate gender-specific cleaning chores</p>
+      {/* 2. Flatmates (X of 10) */}
+      <div className="wire-card">
+        <h2 className="wire-card-title">Flatmates ({members.length} of 10)</h2>
 
-        <div className="roster-list">
+        <div className="flatmates-clean-list">
           {members.map(m => {
             const isMe = m.uid === user?.uid
+            const initial = (m.displayName || m.email || 'N')[0].toUpperCase()
+            const role = m.role === 'admin' ? 'Admin' : 'Flatmate'
+            const roomLabel = m.gender === 'girl' ? "Girls’ room" : "Boys’ room"
+
             return (
-              <div key={m.uid} className="roster-item">
-                <div className="roster-user-col">
-                  <div className="member-avatar">
-                    {(m.displayName || m.email || 'M')[0].toUpperCase()}
+              <div key={m.uid} className="flatmate-clean-row">
+                <div className="flatmate-avatar-circle">
+                  {initial}
+                </div>
+                <div className="flatmate-details">
+                  <div className="flatmate-name-line">
+                    <span className="flatmate-name">{m.displayName || m.email}</span>
+                    {isMe && <span className="flatmate-tag-you"> (you)</span>}
                   </div>
-                  <div>
-                    <strong>{m.displayName || m.email}</strong>
-                    {isMe && <span className="badge-you"> (You)</span>}
-                    <div className="roster-role-text">
-                      {m.role === 'admin' ? '⭐ Flat Admin' : 'Flatmate'} • {m.gender === 'boy' ? "👦 Boys' Room" : "👧 Girl's Room"}
-                    </div>
+                  <div className="flatmate-sub-line">
+                    {role} · {roomLabel}
                   </div>
                 </div>
-
-                {isMe && (
-                  <div className="roster-actions">
-                    <button 
-                      className={`btn btn-xs ${m.gender === 'boy' ? 'btn-primary' : 'btn-secondary'}`}
-                      onClick={() => handleUpdateGender('boy')}
-                      disabled={updating || m.gender === 'boy'}
-                    >
-                      Boys' Room
-                    </button>
-                    <button 
-                      className={`btn btn-xs ${m.gender === 'girl' ? 'btn-primary' : 'btn-secondary'}`}
-                      onClick={() => handleUpdateGender('girl')}
-                      disabled={updating || m.gender === 'girl'}
-                    >
-                      Girl's Room
-                    </button>
-                  </div>
-                )}
               </div>
             )
           })}
         </div>
       </div>
 
-      {/* Inspection Week Toggle (Admin Only) */}
-      <div className="card">
-        <h3 className="card-title">🔍 Monthly Landlord Inspection</h3>
-        <p className="card-subtitle">Highlight all cleaning chores as high-priority across the flat</p>
-
-        <div className="toggle-row">
-          <div>
-            <strong>Inspection Week Status:</strong>
-            <span className={`status-badge ${group.inspectionWeek ? 'badge-active' : 'badge-inactive'}`}>
-              {group.inspectionWeek ? 'Active ⚠️' : 'Inactive'}
-            </span>
-          </div>
-          {isAdmin ? (
-            <button 
-              className={`btn ${group.inspectionWeek ? 'btn-danger' : 'btn-warning'} btn-sm`}
-              onClick={handleToggleInspectionWeek}
-              disabled={updating}
-            >
-              {group.inspectionWeek ? 'End Inspection Week' : 'Activate Inspection Week'}
-            </button>
-          ) : (
-            <small className="help-text">Only Flat Admin can toggle inspection week.</small>
-          )}
-        </div>
-      </div>
-
-      {/* Amenity Rules Management */}
-      <div className="card">
-        <div className="card-header-action">
-          <div>
-            <h3 className="card-title">🍳 Amenity Booking Rules</h3>
-            <p className="card-subtitle">Slot durations and daily limits with 48h protection rule</p>
-          </div>
-          {isAdmin && (
-            <button className="btn btn-secondary btn-sm" onClick={() => setShowAddAmenity(true)}>
-              + Add Amenity
-            </button>
-          )}
+      {/* 3. Amenities */}
+      <div className="wire-card">
+        <div className="wire-card-header-row">
+          <h2 className="wire-card-title">Amenities</h2>
+          <button 
+            className="btn-outline-pill-sm"
+            onClick={() => setShowAddAmenity(prev => !prev)}
+          >
+            + Add
+          </button>
         </div>
 
-        <div className="amenity-settings-list">
-          {(group.amenities || []).map(amenity => {
+        <div className="amenities-clean-list">
+          {activeAmenities.map(amenity => {
             const isEditing = editingAmenityId === amenity.id
 
             return (
-              <div key={amenity.id} className="amenity-config-box">
-                <div className="amenity-config-header">
-                  <span className="amenity-badge-icon">{amenity.icon || '🍳'}</span>
-                  <div>
-                    <strong>{amenity.name}</strong>
-                    <div className="amenity-rule-summary">
-                      {amenity.slotDurationHours}h slot • Max {amenity.maxBookingsPerDay} bookings/day
-                    </div>
+              <div key={amenity.id} className="amenity-clean-row">
+                <div className="amenity-info-col">
+                  <div className="amenity-name-clean">{amenity.name}</div>
+                  <div className="amenity-specs-clean">
+                    {amenity.slotDurationHours || 1}-hour slots · max {amenity.maxBookingsPerDay || 2} a day · 48 hours notice
                   </div>
                 </div>
 
-                {isEditing ? (
-                  <div className="amenity-edit-form">
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>Slot Duration (Hours)</label>
-                        <select value={slotDuration} onChange={e => setSlotDuration(e.target.value)}>
-                          <option value="1">1 Hour</option>
-                          <option value="2">2 Hours</option>
-                        </select>
-                      </div>
-                      <div className="form-group">
-                        <label>Max Bookings / Member / Day</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="5"
-                          value={maxBookings}
-                          onChange={e => setMaxBookings(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="form-actions">
-                      <button className="btn btn-secondary btn-xs" onClick={() => setEditingAmenityId(null)}>
-                        Cancel
-                      </button>
-                      <button 
-                        className="btn btn-primary btn-xs" 
-                        onClick={() => handleSaveAmenitySettings(amenity.id)}
-                        disabled={updating}
-                      >
-                        Save (48h Staging)
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  isAdmin && (
-                    <button 
-                      className="btn btn-secondary btn-xs"
-                      onClick={() => {
+                <div>
+                  <button 
+                    className="btn-outline-pill-sm"
+                    onClick={() => {
+                      if (isEditing) {
+                        setEditingAmenityId(null)
+                      } else {
                         setEditingAmenityId(amenity.id)
                         setSlotDuration(amenity.slotDurationHours || 1)
                         setMaxBookings(amenity.maxBookingsPerDay || 2)
-                      }}
+                      }
+                    }}
+                  >
+                    {isEditing ? 'Close' : 'Edit'}
+                  </button>
+                </div>
+
+                {isEditing && (
+                  <div className="inline-amenity-edit-panel">
+                    <div className="inline-form-field">
+                      <label>Slot duration (hours)</label>
+                      <select value={slotDuration} onChange={e => setSlotDuration(e.target.value)}>
+                        <option value="1">1 hour</option>
+                        <option value="2">2 hours</option>
+                      </select>
+                    </div>
+                    <div className="inline-form-field">
+                      <label>Max slots / day / person</label>
+                      <input 
+                        type="number" 
+                        min="1" 
+                        max="5" 
+                        value={maxBookings} 
+                        onChange={e => setMaxBookings(e.target.value)} 
+                      />
+                    </div>
+                    <button 
+                      className="btn-primary-green btn-sm"
+                      onClick={() => handleSaveAmenity(amenity.id)}
+                      disabled={updating}
                     >
-                      Edit Rules
+                      Save rules
                     </button>
-                  )
+                  </div>
                 )}
               </div>
             )
@@ -333,34 +306,75 @@ export default function Settings() {
         </div>
 
         {showAddAmenity && (
-          <form onSubmit={handleCreateAmenity} className="add-amenity-form">
-            <h4>Add New Shared Amenity</h4>
-            <div className="form-row">
-              <input
-                type="text"
-                placeholder="Amenity Name (e.g. Laundry / Washing Machine)"
-                value={newAmenityName}
-                onChange={e => setNewAmenityName(e.target.value)}
-                required
-              />
-              <select value={newAmenityIcon} onChange={e => setNewAmenityIcon(e.target.value)}>
-                <option value="🧺">🧺 Laundry</option>
-                <option value="📺">📺 TV / Lounge</option>
-                <option value="🚿">🚿 Shower</option>
-                <option value="🍳">🍳 Kitchen</option>
-              </select>
-            </div>
-            <div className="form-actions">
-              <button type="button" className="btn btn-secondary btn-xs" onClick={() => setShowAddAmenity(false)}>
-                Cancel
+          <form onSubmit={handleAddAmenitySubmit} className="add-amenity-inline-form">
+            <input 
+              type="text" 
+              placeholder="Amenity name (e.g. Laundry, Lounge)"
+              value={newAmenityName}
+              onChange={e => setNewAmenityName(e.target.value)}
+              required
+            />
+            <div className="form-action-row">
+              <button type="submit" className="btn-primary-green btn-sm" disabled={updating}>
+                Add amenity
               </button>
-              <button type="submit" className="btn btn-primary btn-xs" disabled={updating}>
-                Add Amenity
+              <button 
+                type="button" 
+                className="btn-outline-pill-sm" 
+                onClick={() => setShowAddAmenity(false)}
+              >
+                Cancel
               </button>
             </div>
           </form>
         )}
       </div>
+
+      {/* 4. Landlord inspection */}
+      <div className="wire-card">
+        <h2 className="wire-card-title">Landlord inspection</h2>
+        <p className="wire-card-sub">Marks every cleaning chore as high priority.</p>
+
+        <div className="landlord-inspection-row">
+          <div className={`status-pill ${group.inspectionWeek ? 'status-pill-warning' : 'status-pill-muted'}`}>
+            {group.inspectionWeek ? 'Active' : 'Not active'}
+          </div>
+
+          <button 
+            className="btn-outline-pill"
+            onClick={handleToggleInspectionWeek}
+            disabled={updating}
+          >
+            {group.inspectionWeek ? 'End inspection week' : 'Start inspection week'}
+          </button>
+        </div>
+      </div>
+
+      {/* 5. Alerts */}
+      <div className="wire-card alerts-wire-card">
+        <div className="alerts-info-col">
+          <h2 className="wire-card-title">Alerts</h2>
+          <p className="wire-card-sub">Bin and chore reminders on this device</p>
+        </div>
+
+        <button 
+          className={`btn-primary-green btn-pill ${alertsEnabled ? 'btn-active-alerts' : ''}`}
+          onClick={handleRequestAlerts}
+        >
+          {alertsEnabled ? 'Active' : 'Turn on'}
+        </button>
+      </div>
+
+      {/* 6. Sign out */}
+      <div className="signout-button-wrap">
+        <button 
+          className="btn-signout-outline"
+          onClick={handleSignOut}
+        >
+          Sign out
+        </button>
+      </div>
     </div>
   )
 }
+
