@@ -141,6 +141,8 @@ a {
 
 button {
   font-family: inherit;
+  font-size: inherit;
+  color: inherit;
   cursor: pointer;
   border: none;
   background: none;
@@ -1617,90 +1619,112 @@ select.input {
 }
 
 .choice-card {
-  padding: 16px;
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
+  padding: 18px 20px;
+  background: #222638;
+  border: 1.5px solid #353b54;
   border-radius: var(--radius-lg);
   text-align: left;
   cursor: pointer;
   transition: all var(--transition-fast);
+  color: #ffffff;
+  width: 100%;
 }
 
 .choice-card:hover {
-  border-color: var(--color-accent);
+  background: #292e44;
+  border-color: var(--color-accent-light);
   transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 .choice-icon {
-  font-size: 28px;
+  font-size: 32px;
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .choice-card h3 {
-  font-size: var(--font-size-md);
+  font-size: 18px;
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  color: #ffffff !important;
+  letter-spacing: -0.01em;
 }
 
 .choice-card p {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
+  font-size: 13px;
+  color: #c2c8dc !important;
+  line-height: 1.5;
 }
 
 /* Form inputs & Radios */
 .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
 .form-group label {
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  color: #b8c0db;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .form-group input, .form-group select {
   width: 100%;
-  padding: 10px 14px;
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
+  padding: 12px 16px;
+  background: #181b26;
+  border: 1.5px solid #33384e;
   border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-base);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 500;
   outline: none;
+  transition: border-color var(--transition-fast);
 }
 .form-group input:focus, .form-group select:focus {
-  border-color: var(--color-accent);
+  border-color: var(--color-accent-light);
+  box-shadow: 0 0 0 3px rgba(124, 106, 247, 0.2);
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
 .radio-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
 }
 
 .radio-pill {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #1c202e;
+  border: 1.5px solid #33394e;
   border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: var(--font-size-xs);
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.radio-pill:hover {
+  background: #24293c;
+  border-color: #4a5270;
+}
+
+.radio-pill span {
+  font-size: 13px;
   font-weight: 600;
+  color: #c5cbe0;
 }
 
 .radio-pill input {
@@ -1708,14 +1732,20 @@ select.input {
 }
 
 .radio-pill.active {
-  border-color: var(--color-accent);
-  background: var(--color-accent-dim);
-  color: var(--color-accent-light);
+  border-color: var(--color-accent-light);
+  background: rgba(124, 106, 247, 0.2);
+  box-shadow: 0 0 12px rgba(124, 106, 247, 0.25);
+}
+
+.radio-pill.active span {
+  color: #ffffff;
+  font-weight: 700;
 }
 
 .help-text {
-  font-size: 11px;
-  color: var(--color-text-muted);
+  font-size: 12px;
+  color: #8f97b5;
+  margin-top: 2px;
 }
 
 .form-actions {
