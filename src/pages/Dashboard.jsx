@@ -40,9 +40,11 @@ export default function Dashboard() {
 
   // Ensure members list is populated from real group members
   const activeMembers = (members && members.length > 0) ? members : [
-    { uid: 'ninaad', displayName: 'Ninaad Saxena', gender: 'boy' },
-    { uid: 'steve', displayName: 'Steve', gender: 'boy' },
-    { uid: 'christy', displayName: 'Christy', gender: 'girl' }
+    { 
+      uid: user.uid, 
+      displayName: user.displayName || user.email?.split('@')[0] || 'You', 
+      gender: user.gender || 'boy' 
+    }
   ]
 
   const binInfo = getUpcomingDublinBinInfo(group.binConfig || {})
@@ -256,7 +258,7 @@ export default function Dashboard() {
           if (choresOnDay.length === 0) return null
 
           const isTargetSelected = isSameDay(dayItem.date, selectedDayDate)
-          const headerDateFormatted = format(dayItem.date, 'EEEE d')
+          const headerDateFormatted = format(dayItem.date, 'd MMMM')
           const dateAnchorId = `chore-day-${format(dayItem.date, 'yyyy-MM-dd')}`
 
           return (

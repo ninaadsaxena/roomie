@@ -116,43 +116,6 @@ export default function Schedule() {
     }
   }
 
-  // Pre-load default template (e.g. Ninaad, Steve, or Christy's known classes)
-  const handleLoadSampleSchedule = async (presetName) => {
-    let sampleBlocks = []
-    if (presetName === 'ninaad') {
-      sampleBlocks = [
-        { id: 'n1', day: 'Monday', title: 'University Classes', startTime: '09:00', endTime: '19:00', mode: 'offline', travelBuffer: 40 },
-        { id: 'n2', day: 'Wednesday', title: 'University Classes', startTime: '10:00', endTime: '19:00', mode: 'offline', travelBuffer: 40 }
-      ]
-    } else if (presetName === 'steve') {
-      sampleBlocks = [
-        { id: 's1', day: 'Monday', title: 'Supply Chain & Finance', startTime: '15:00', endTime: '18:00', mode: 'offline', travelBuffer: 30 },
-        { id: 's2', day: 'Tuesday', title: 'Classes (Mixed Offline/Online)', startTime: '10:00', endTime: '16:00', mode: 'offline', travelBuffer: 30 },
-        { id: 's3', day: 'Wednesday', title: 'Supply Chain Ops', startTime: '13:00', endTime: '18:00', mode: 'offline', travelBuffer: 30 },
-        { id: 's4', day: 'Thursday', title: 'Finance Workshops (Online)', startTime: '11:00', endTime: '16:00', mode: 'online', travelBuffer: 0 },
-        { id: 's5', day: 'Sunday', title: 'Church Service', startTime: '10:00', endTime: '14:00', mode: 'church', travelBuffer: 20 }
-      ]
-    } else if (presetName === 'christy') {
-      sampleBlocks = [
-        { id: 'c1', day: 'Wednesday', title: 'Classes & Lab', startTime: '12:00', endTime: '19:00', mode: 'offline', travelBuffer: 20 },
-        { id: 'c2', day: 'Thursday', title: 'Classes & Study', startTime: '12:00', endTime: '19:00', mode: 'offline', travelBuffer: 20 },
-        { id: 'c3', day: 'Sunday', title: 'Church Service', startTime: '10:00', endTime: '14:00', mode: 'church', travelBuffer: 20 }
-      ]
-    }
-
-    try {
-      setSaving(true)
-      const userRef = doc(db, 'users', activeTabMemberId)
-      await setDoc(userRef, { schedule: sampleBlocks }, { merge: true })
-      setSchedulesByUser(prev => ({ ...prev, [activeTabMemberId]: sampleBlocks }))
-      setStatusMessage(`Pre-filled ${presetName}'s timetable!`)
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setSaving(false)
-    }
-  }
-
   // Auto distribute chores across members based on these schedules
   const handleAutoBalanceChores = async () => {
     try {
@@ -219,22 +182,22 @@ export default function Schedule() {
         Auto–balance chores
       </button>
 
-      {/* Quick Timetable Presets if empty */}
+      {/* Empty State for Commitments */}
       {currentMemberSchedule.length === 0 && (
-        <div className="wire-card" style={{ marginBottom: '20px' }}>
-          <h3 className="wire-card-title" style={{ fontSize: '15px' }}>Need sample commitments?</h3>
-          <p className="wire-card-sub">Pre-fill schedule for Dublin university student / work:</p>
-          <div className="preset-btn-group" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
-            <button className="btn-outline-pill-sm" onClick={() => handleLoadSampleSchedule('ninaad')}>
-              Load Ninaad's sample
+        <div className="wire-card" style={{ marginBottom: '20px', textAlign: 'center', padding: '24px 16px' }}>
+          <div style={{ fontSize: '24px', marginBottom: '8px' }}>🗓️</div>
+          <h3 className="wire-card-title" style={{ fontSize: '15px', marginBottom: '4px' }}>No recurring commitments yet</h3>
+          <p className="wire-card-sub" style={{ maxWidth: '340px', margin: '0 auto 14px' }}>
+            Add lectures, lab sessions, or work shifts so Roomie can schedule chores around your free days.
+          </p>
+          {isEditingMySchedule && (
+            <button 
+              className="btn-primary-green btn-sm"
+              onClick={() => setShowAddForm(true)}
+            >
+              + Add your first commitment
             </button>
-            <button className="btn-outline-pill-sm" onClick={() => handleLoadSampleSchedule('steve')}>
-              Load Steve's sample
-            </button>
-            <button className="btn-outline-pill-sm" onClick={() => handleLoadSampleSchedule('christy')}>
-              Load Christy's sample
-            </button>
-          </div>
+          )}
         </div>
       )}
 

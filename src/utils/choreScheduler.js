@@ -7,12 +7,9 @@ import {
   nextTuesday,
   startOfMonth,
   endOfMonth,
-  startOfDay,
   eachDayOfInterval,
   isSameMonth,
-  isSameDay,
-  addMonths,
-  subMonths
+  isSameDay
 } from 'date-fns'
 
 // Days of the week in Monday-first order
@@ -20,49 +17,16 @@ export const DAYS_OF_WEEK = [
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
 ]
 
-// Anchor date: Monday, October 5, 2026 (Week 1 in user's calendar)
+// Anchor date for weekly rotation cycle (Monday, October 5, 2026)
 export const ANCHOR_DATE = new Date('2026-10-05T00:00:00')
-
-/**
- * Standard fixed university & church commitments reference timetable.
- */
-export const DEFAULT_WEEKLY_CLASSES = {
-  Monday: [
-    { name: 'Ninaad', title: 'Classes: 9AM-7PM', type: 'offline' },
-    { name: 'Steve', title: 'Classes: 3PM-7PM', type: 'offline' }
-  ],
-  Tuesday: [],
-  Wednesday: [
-    { name: 'Ninaad', title: 'Classes: 10AM-7PM', type: 'offline' },
-    { name: 'Christy', title: 'Classes: 12PM-7PM', type: 'offline' },
-    { name: 'Steve', title: 'Classes: 10AM-4PM Online', type: 'online' }
-  ],
-  Thursday: [
-    { name: 'Christy', title: 'Classes: 12PM-7PM', type: 'offline' },
-    { name: 'Steve', title: 'Classes: 1PM-6PM', type: 'offline' }
-  ],
-  Friday: [
-    { name: 'Steve', title: 'Classes: 11AM-4PM Online', type: 'online' }
-  ],
-  Saturday: [],
-  Sunday: [
-    { name: 'Church', title: 'Church Service (10AM-2PM)', type: 'church' }
-  ]
-}
 
 /**
  * Calculates the Dublin bin collection type for any target Tuesday.
  * Week A: Green Bins & White Bags (Recyclables)
- * Week B: Brown & Black Bins (Organic & Waste)
- * On Oct 5/6: Week B (Brown/Black)
- * On Oct 12/13: Week A (Green)
+ * Week B: Brown & Black Bins (Organic & General Waste)
  */
 export function getDublinBinTypeForDate(targetDate) {
-  // Oct 5, 2026 was Week B (Brown & Black)
-  const anchorMon = new Date('2026-10-05T00:00:00')
-  const weeksDiff = differenceInCalendarWeeks(targetDate, anchorMon, { weekStartsOn: 1 })
-  
-  // Even weeks from anchor are Week B, odd are Week A
+  const weeksDiff = differenceInCalendarWeeks(targetDate, ANCHOR_DATE, { weekStartsOn: 1 })
   const isWeekB = Math.abs(weeksDiff) % 2 === 0
   return isWeekB ? 'brown_black' : 'green'
 }
@@ -94,139 +58,157 @@ export function getUpcomingDublinBinInfo(binConfig = {}) {
 }
 
 /**
- * Generates the precise rotational assignments for any given date
- * matching the user's October, November, and December monthly rotation charts.
+ * Helper to ensure positive modulo
+ */
+const mod = (n, m) => ((n % m) + m) % m
+
+/**
+ * Generates equal rotational assignments for any given date and any flatmate roster.
  * 
- * Three flatmates cycle:
- * Ninaad (Index 0), Steve (Index 1), Christy (Index 2)
+ * - Shared Chores rotate strictly equally across all N roommates using round-robin.
+ * - Restricted Chores (Boys' Room, Girls' Room) are strictly assigned only to their respective room occupants.
+ * - Dynamic: Any change in the roommates list automatically shifts the rotation seamlessly.
  */
 export function getRotationalScheduleForDate(date, members = []) {
-  // Normalize members list; default to Ninaad, Steve, Christy
-  const roster = members.length >= 3 ? members : [
-    { uid: 'ninaad', displayName: 'Ninaad', gender: 'boy' },
-    { uid: 'steve', displayName: 'Steve', gender: 'boy' },
-    { uid: 'christy', displayName: 'Christy', gender: 'girl' }
-  ]
+  if (!members || members.length === 0) return []
 
-  const ninaad = roster.find(m => m.displayName?.toLowerCase().includes('ninaad') || m.email?.includes('ninaad')) || roster[0]
-  const steve = roster.find(m => m.displayName?.toLowerCase().includes('steve') || m.email?.includes('steve')) || roster[1]
-  const christy = roster.find(m => m.displayName?.toLowerCase().includes('christy') || m.email?.includes('christy')) || roster[2]
+  const N = members.length
+  const weekDiff = differenceInCalendarWeeks(date, ANCHOR_DATE, { weekStartsOn: 1 })
+  const W = 1 + weekDiff // Week index relative to anchor
 
-  const cycle = [ninaad, steve, christy]
-  const N = cycle.length
-
-  // Calculate week index from Anchor: Monday Oct 5, 2026 (W = 1)
-  // Week 1:
-  // - Mon Night/Tue Bins: Christy (cycle[2])
-  // - Friday Kitchen: Christy (cycle[2])
-  // - Saturday Bathroom: Ninaad (cycle[0])
-  // - Sunday Living: Steve (cycle[1])
-  const anchorMon = new Date('2026-10-05T00:00:00')
-  const weekDiff = differenceInCalendarWeeks(date, anchorMon, { weekStartsOn: 1 })
-  const W = 1 + weekDiff
-
-  // Positive modulo helper
-  const mod = (n, m) => ((n % m) + m) % m
-
-  // Assignee per chore in week W:
-  const binAssignee = cycle[mod(W + 1, N)]
-  const fridayKitchenAssignee = cycle[mod(W + 1, N)]
-  const saturdayBathroomAssignee = cycle[mod(W + 2, N)]
-  const sundayLivingAssignee = cycle[mod(W, N)]
+  // Shared Chores equal round-robin rotation across all members
+  // Offsets ensure different members handle different chores each week
+  const binAssignee = members[mod(W + 1, N)]
+  const kitchenAssignee = members[mod(W + 1, N)]
+  const bathroomAssignee = members[mod(W + 2, N)]
+  const livingAssignee = members[mod(W, N)]
 
   const dayOfWeek = format(date, 'EEEE')
   const dateStr = format(date, 'yyyy-MM-dd')
-
   const items = []
 
-  // Add university classes reference
-  const classes = DEFAULT_WEEKLY_CLASSES[dayOfWeek] || []
-  classes.forEach(c => {
-    items.push({
-      id: `class_${dateStr}_${c.name}`,
-      type: 'class',
-      title: `${c.name}: ${c.title}`,
-      icon: c.type === 'online' ? '💻' : c.type === 'church' ? '⛪' : '📚',
-      isChore: false
-    })
-  })
-
-  // Add specific chores for this day of week
+  // Monday Night: Bin Put Out
   if (dayOfWeek === 'Monday') {
     const nextTue = addDays(date, 1)
     const binType = getDublinBinTypeForDate(nextTue)
-    const binLabel = binType === 'green' ? 'Week A: Green Bin/White Bags' : 'Week B: Brown & Black Bins'
+    const binLabel = binType === 'green' ? 'Week A: Green Bins & White Bags' : 'Week B: Brown & Black Bins'
     items.push({
       id: `bin_putout_${dateStr}`,
       type: 'bin_putout',
       title: `Put Bins Outside (${binLabel})`,
-      detail: 'Put outside Mon night before Tue',
+      detail: 'Put outside Monday night before collection',
       icon: '🌙',
       assignedTo: binAssignee.uid,
-      assignedToName: binAssignee.displayName,
-      isChore: true
+      assignedToName: binAssignee.displayName || binAssignee.email?.split('@')[0] || 'Flatmate',
+      isChore: true,
+      isRestricted: false
     })
-  } else if (dayOfWeek === 'Tuesday') {
+  }
+
+  // Tuesday Morning: Bin Collection & Bring In
+  if (dayOfWeek === 'Tuesday') {
     items.push({
       id: `bin_pickup_${dateStr}`,
       type: 'bin_pickup',
-      title: `Dublin 7 Bin Collection & Bin Pickup`,
-      detail: 'Bring Bins Inside after collection',
+      title: 'Dublin 7 Bin Collection & Bring In',
+      detail: 'Bring bins back inside after morning collection',
       icon: '🚛',
       assignedTo: binAssignee.uid,
-      assignedToName: binAssignee.displayName,
-      isChore: true
+      assignedToName: binAssignee.displayName || binAssignee.email?.split('@')[0] || 'Flatmate',
+      isChore: true,
+      isRestricted: false
     })
-  } else if (dayOfWeek === 'Friday') {
+  }
+
+  // Friday: Kitchen Deep Clean
+  if (dayOfWeek === 'Friday') {
     items.push({
       id: `kitchen_clean_${dateStr}`,
       type: 'cleaning',
-      title: `Stove, Kitchen & Microwave Table Cleaning`,
+      title: 'Stove, Kitchen & Microwave Table Cleaning',
+      detail: 'Wipe countertops, clean stove burners and microwave',
       icon: '🍳',
-      assignedTo: fridayKitchenAssignee.uid,
-      assignedToName: fridayKitchenAssignee.displayName,
-      isChore: true
+      assignedTo: kitchenAssignee.uid,
+      assignedToName: kitchenAssignee.displayName || kitchenAssignee.email?.split('@')[0] || 'Flatmate',
+      isChore: true,
+      isRestricted: false
     })
-  } else if (dayOfWeek === 'Saturday') {
+  }
+
+  // Saturday: Bathroom Clean & Room Clean (Restricted)
+  if (dayOfWeek === 'Saturday') {
+    // 1. Bathroom Clean (Shared chore, rotates equally)
     items.push({
       id: `bathroom_clean_${dateStr}`,
       type: 'cleaning',
-      title: `Bathroom (Toilet, Mirror, Sink) Cleaning`,
+      title: 'Bathroom (Toilet, Mirror, Sink) Cleaning',
+      detail: 'Scrub toilet, disinfect sink and polish mirror',
       icon: '🧽',
-      assignedTo: saturdayBathroomAssignee.uid,
-      assignedToName: saturdayBathroomAssignee.displayName,
-      isChore: true
+      assignedTo: bathroomAssignee.uid,
+      assignedToName: bathroomAssignee.displayName || bathroomAssignee.email?.split('@')[0] || 'Flatmate',
+      isChore: true,
+      isRestricted: false
     })
-    items.push({
-      id: `room_clean_${dateStr}`,
-      type: 'room_cleaning',
-      title: `Room Cleaning (Boys' Room | Girl's Room)`,
-      detail: `${ninaad.displayName} & ${steve.displayName}: Boys' Room | ${christy.displayName}: Girl's Room`,
-      icon: '🛏️',
-      assignedTo: 'all',
-      assignedToName: 'Boys & Girls',
-      isChore: true
-    })
-  } else if (dayOfWeek === 'Sunday') {
+
+    // 2. Restricted Room Chores (Strictly assigned to respective occupants)
+    const boys = members.filter(m => m.gender === 'boy')
+    const girls = members.filter(m => m.gender === 'girl')
+
+    if (boys.length > 0) {
+      const boyNames = boys.map(b => b.displayName?.split(' ')[0] || 'Boy').join(' & ')
+      items.push({
+        id: `boys_room_clean_${dateStr}`,
+        type: 'room_cleaning',
+        title: "Boys' Room Clean",
+        detail: `Tidy up and vacuum boys' bedroom (${boyNames})`,
+        icon: '🛏️',
+        assignedTo: boys.length === 1 ? boys[0].uid : 'boys',
+        assignedToName: boyNames,
+        isChore: true,
+        isRestricted: true
+      })
+    }
+
+    if (girls.length > 0) {
+      const girlNames = girls.map(g => g.displayName?.split(' ')[0] || 'Girl').join(' & ')
+      items.push({
+        id: `girls_room_clean_${dateStr}`,
+        type: 'room_cleaning',
+        title: "Girls' Room Clean",
+        detail: `Tidy up and vacuum girls' bedroom (${girlNames})`,
+        icon: '🛏️',
+        assignedTo: girls.length === 1 ? girls[0].uid : 'girls',
+        assignedToName: girlNames,
+        isChore: true,
+        isRestricted: true
+      })
+    }
+  }
+
+  // Sunday: Living Area & Hallway Clean (Shared chore, rotates equally)
+  if (dayOfWeek === 'Sunday') {
     items.push({
       id: `living_clean_${dateStr}`,
       type: 'cleaning',
-      title: `Living Area Cleaning`,
-      detail: 'Afternoon/Evening (After 2 PM)',
+      title: 'Living Area & Table Cleaning',
+      detail: 'Tidy sofas, clear dining table and vacuum rugs',
       icon: '🛋️',
-      assignedTo: sundayLivingAssignee.uid,
-      assignedToName: sundayLivingAssignee.displayName,
-      isChore: true
+      assignedTo: livingAssignee.uid,
+      assignedToName: livingAssignee.displayName || livingAssignee.email?.split('@')[0] || 'Flatmate',
+      isChore: true,
+      isRestricted: false
     })
+
     items.push({
       id: `hallway_clean_${dateStr}`,
       type: 'cleaning',
-      title: `Hallway & Entry Cleaning`,
-      detail: 'Afternoon/Evening (After 2 PM)',
+      title: 'Hallway & Entry Cleaning',
+      detail: 'Sweep entryway and organize shoe racks',
       icon: '🚪',
-      assignedTo: sundayLivingAssignee.uid,
-      assignedToName: sundayLivingAssignee.displayName,
-      isChore: true
+      assignedTo: livingAssignee.uid,
+      assignedToName: livingAssignee.displayName || livingAssignee.email?.split('@')[0] || 'Flatmate',
+      isChore: true,
+      isRestricted: false
     })
   }
 
@@ -261,7 +243,7 @@ export function buildMonthCalendarDays(currentMonthDate, members = []) {
  * Returns Availability status (Free/Partial/Busy) for a member based on schedule.
  */
 export function getMemberDayAvailability(scheduleList = [], dayName) {
-  const commitments = scheduleList.filter(s => s.day?.toLowerCase() === dayName.toLowerCase())
+  const commitments = (scheduleList || []).filter(s => s.day?.toLowerCase() === dayName.toLowerCase())
   if (commitments.length === 0) {
     return {
       status: 'available',
@@ -314,12 +296,29 @@ export function calculateMemberFreeScore(scheduleList = [], dayName) {
 }
 
 /**
- * Distributes custom chores fairly among members according to availability scores.
+ * Distributes chores fairly among members according to availability scores,
+ * respecting restricted chores.
  */
 export function autoDistributeChores(chores = [], members = [], schedulesByUser = {}) {
   if (!members || members.length === 0) return chores
+
   let memberIdx = 0
   return chores.map(chore => {
+    // If it's a restricted room chore, assign only to occupants of that room/gender
+    if (chore.isRestricted || chore.restrictedTo) {
+      const targetGender = chore.restrictedTo || (chore.title?.toLowerCase().includes('boy') ? 'boy' : 'girl')
+      const eligible = members.filter(m => m.gender === targetGender)
+      if (eligible.length > 0) {
+        const best = eligible[memberIdx % eligible.length]
+        return {
+          ...chore,
+          assignedTo: eligible.length === 1 ? best.uid : `${targetGender}s`,
+          assignedToName: eligible.map(e => e.displayName?.split(' ')[0] || 'Roommate').join(' & ')
+        }
+      }
+    }
+
+    // Shared chore: score by availability on choreDay
     const choreDay = chore.day || 'Saturday'
     const scoredMembers = members.map((m, idx) => ({
       member: m,
@@ -328,6 +327,7 @@ export function autoDistributeChores(chores = [], members = [], schedulesByUser 
     scoredMembers.sort((a, b) => b.score - a.score)
     const bestMember = scoredMembers[0]?.member || members[memberIdx % members.length]
     memberIdx++
+
     return {
       ...chore,
       assignedTo: bestMember.uid,
@@ -335,4 +335,3 @@ export function autoDistributeChores(chores = [], members = [], schedulesByUser 
     }
   })
 }
-
