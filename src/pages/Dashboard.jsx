@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useGroup } from '../context/GroupContext'
 import { getUpcomingDublinBinInfo, DAYS_OF_WEEK } from '../utils/choreScheduler'
 import LoadingSpinner from '../components/LoadingSpinner'
+import NotificationPrompt from '../components/NotificationPrompt'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -144,6 +145,9 @@ export default function Dashboard() {
 
   return (
     <div className="page-content">
+      {/* Notification Permissions Banner */}
+      <NotificationPrompt compact={true} />
+
       {/* Inspection Week Alert */}
       {group.inspectionWeek && (
         <div className="alert alert-warning banner-inspection">

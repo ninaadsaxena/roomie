@@ -5,6 +5,7 @@ import { db } from '../firebase/config'
 import { useAuth } from '../context/AuthContext'
 import { useGroup } from '../context/GroupContext'
 import LoadingSpinner from '../components/LoadingSpinner'
+import NotificationPrompt from '../components/NotificationPrompt'
 
 export default function Settings() {
   const { user, updateUserProfile } = useAuth()
@@ -147,6 +148,9 @@ export default function Settings() {
           <p className="page-subtitle">{group.name} • Invite code & Rules</p>
         </div>
       </div>
+
+      {/* Push Notifications Settings */}
+      <NotificationPrompt />
 
       {statusMessage && (
         <div className="alert alert-success" style={{ marginBottom: '16px' }}>
