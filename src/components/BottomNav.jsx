@@ -24,7 +24,7 @@ export default function BottomNav() {
           to="/amenities" 
           className={({ isActive }) => `bottom-nav-link ${isActive ? 'active' : ''}`}
         >
-          Kitchen
+          Amenities
         </NavLink>
 
         <NavLink 

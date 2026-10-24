@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { doc, updateDoc } from 'firebase/firestore'
-import { format, isSameDay } from 'date-fns'
+import { format, isSameDay, startOfWeek, addDays, startOfDay } from 'date-fns'
 import { db } from '../firebase/config'
 import { useAuth } from '../context/AuthContext'
 import { useGroup } from '../context/GroupContext'
@@ -16,10 +16,10 @@ export default function Dashboard() {
   const { group, members, loadingGroup } = useGroup()
   const navigate = useNavigate()
 
-  const [currentMonthDate] = useState(new Date('2026-10-01T00:00:00'))
+  const [currentMonthDate] = useState(startOfDay(new Date()))
   const [memberFilter, setMemberFilter] = useState('all') // 'all' | 'mine' | memberUid
   const [updating, setUpdating] = useState(false)
-  const [selectedDayDate, setSelectedDayDate] = useState(new Date('2026-10-24T00:00:00'))
+  const [selectedDayDate, setSelectedDayDate] = useState(startOfDay(new Date()))
   const [alertsEnabled, setAlertsEnabled] = useState(false)
 
   useEffect(() => {
@@ -38,8 +38,8 @@ export default function Dashboard() {
     return <LoadingSpinner message="Loading chores..." />
   }
 
-  // Ensure members list is populated
-  const activeMembers = (members && members.length >= 3) ? members : [
+  // Ensure members list is populated from real group members
+  const activeMembers = (members && members.length > 0) ? members : [
     { uid: 'ninaad', displayName: 'Ninaad Saxena', gender: 'boy' },
     { uid: 'steve', displayName: 'Steve', gender: 'boy' },
     { uid: 'christy', displayName: 'Christy', gender: 'girl' }
@@ -116,13 +116,14 @@ export default function Dashboard() {
   const completedMonthlyChores = allMonthlyChoreItems.filter(it => !!completedChores[it.id]?.done).length
   const progressPercent = totalMonthlyChores > 0 ? Math.round((completedMonthlyChores / totalMonthlyChores) * 100) : 0
 
-  // 7-day week strip (Oct 19 to Oct 25)
-  const weekStripDays = [19, 20, 21, 22, 23, 24, 25].map(dayNum => {
-    const d = new Date(`2026-10-${String(dayNum).padStart(2, '0')}T00:00:00`)
+  // Dynamic 7-day week strip calculated from the week of selectedDayDate
+  const weekStart = startOfWeek(selectedDayDate, { weekStartsOn: 1 })
+  const weekStripDays = [0, 1, 2, 3, 4, 5, 6].map(offset => {
+    const d = addDays(weekStart, offset)
     return {
       date: d,
       dayShort: format(d, 'EEE'),
-      dayNum,
+      dayNum: format(d, 'd'),
       isSelected: isSameDay(d, selectedDayDate)
     }
   })
@@ -132,8 +133,8 @@ export default function Dashboard() {
 
   return (
     <div className="mobile-page-container">
-      {/* Page Header */}
-      <div className="page-meta-eyebrow">Today · Sat 24 Oct</div>
+      {/* Dynamic Page Header */}
+      <div className="page-meta-eyebrow">Today · {format(new Date(), 'EEE d MMM')}</div>
       <h1 className="page-headline">Chores</h1>
 
       {/* 1. Alerts Prompt Card */}
@@ -228,7 +229,13 @@ export default function Dashboard() {
           <button
             key={item.dayNum}
             className={`week-strip-day-col ${item.isSelected ? 'active-pill' : 'inactive-col'}`}
-            onClick={() => setSelectedDayDate(item.date)}
+            onClick={() => {
+              setSelectedDayDate(item.date)
+              const el = document.getElementById(`chore-day-${format(item.date, 'yyyy-MM-dd')}`)
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            }}
           >
             <span className="ws-day-name">{item.dayShort}</span>
             <span className="ws-day-num">{item.dayNum}</span>
@@ -250,10 +257,12 @@ export default function Dashboard() {
 
           const isTargetSelected = isSameDay(dayItem.date, selectedDayDate)
           const headerDateFormatted = format(dayItem.date, 'EEEE d')
+          const dateAnchorId = `chore-day-${format(dayItem.date, 'yyyy-MM-dd')}`
 
           return (
             <div 
               key={dIdx} 
+              id={dateAnchorId}
               className={`chore-date-section ${isTargetSelected ? 'selected-focus-day' : ''}`}
             >
               <h2 className="chore-date-header">{headerDateFormatted}</h2>

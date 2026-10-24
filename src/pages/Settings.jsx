@@ -98,21 +98,56 @@ export default function Settings() {
     }
   }
 
+  const [advanceNotice, setAdvanceNotice] = useState(48)
+
   const handleSaveAmenity = async (amenityId) => {
     try {
       setUpdating(true)
-      const updatedAmenities = (group.amenities || []).map(a => {
+      const baseList = (group.amenities && group.amenities.length > 0)
+        ? group.amenities
+        : [
+            {
+              id: 'kitchen',
+              name: 'Kitchen & Stove',
+              icon: '🍳',
+              slotDurationHours: 2,
+              maxBookingsPerDay: 1,
+              advanceNoticeHours: 48,
+              active: true
+            }
+          ]
+
+      const updatedAmenities = baseList.map(a => {
         if (a.id === amenityId) {
           return {
             ...a,
             slotDurationHours: Number(slotDuration),
-            maxBookingsPerDay: Number(maxBookings)
+            maxBookingsPerDay: Number(maxBookings),
+            advanceNoticeHours: Number(advanceNotice)
           }
         }
         return a
       })
       await updateDoc(doc(db, 'groups', group.id), { amenities: updatedAmenities })
       setEditingAmenityId(null)
+      setStatusMessage("Amenity rules updated!")
+      setTimeout(() => setStatusMessage(null), 3000)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const handleDeleteAmenity = async (amenityId) => {
+    if (!window.confirm("Are you sure you want to remove this amenity?")) return
+    try {
+      setUpdating(true)
+      const baseList = group.amenities || []
+      const updated = baseList.filter(a => a.id !== amenityId)
+      await updateDoc(doc(db, 'groups', group.id), { amenities: updated })
+      setStatusMessage("Amenity removed.")
+      setTimeout(() => setStatusMessage(null), 3000)
     } catch (e) {
       console.error(e)
     } finally {
@@ -125,18 +160,35 @@ export default function Settings() {
     if (!newAmenityName.trim()) return
     try {
       setUpdating(true)
+      const baseList = (group.amenities && group.amenities.length > 0)
+        ? group.amenities
+        : [
+            {
+              id: 'kitchen',
+              name: 'Kitchen & Stove',
+              icon: '🍳',
+              slotDurationHours: 2,
+              maxBookingsPerDay: 1,
+              advanceNoticeHours: 48,
+              active: true
+            }
+          ]
+
       const newAmenity = {
         id: `amenity_${Date.now()}`,
         name: newAmenityName.trim(),
-        icon: newAmenityIcon,
+        icon: newAmenityIcon || '✨',
         slotDurationHours: 1,
         maxBookingsPerDay: 2,
+        advanceNoticeHours: 24,
         active: true
       }
-      const updated = [...(group.amenities || []), newAmenity]
+      const updated = [...baseList, newAmenity]
       await updateDoc(doc(db, 'groups', group.id), { amenities: updated })
       setShowAddAmenity(false)
       setNewAmenityName('')
+      setStatusMessage(`Added ${newAmenity.name}!`)
+      setTimeout(() => setStatusMessage(null), 3000)
     } catch (e) {
       console.error(e)
     } finally {
@@ -160,9 +212,12 @@ export default function Settings() {
     : [
         {
           id: 'kitchen',
-          name: 'Kitchen and stove',
-          slotDurationHours: 1,
-          maxBookingsPerDay: 2
+          name: 'Kitchen & Stove',
+          icon: '🍳',
+          slotDurationHours: 2,
+          maxBookingsPerDay: 1,
+          advanceNoticeHours: 48,
+          active: true
         }
       ]
 
@@ -245,13 +300,19 @@ export default function Settings() {
         <div className="amenities-clean-list">
           {activeAmenities.map(amenity => {
             const isEditing = editingAmenityId === amenity.id
+            const noticeText = amenity.advanceNoticeHours 
+              ? `${amenity.advanceNoticeHours} hours notice` 
+              : 'Immediate booking'
 
             return (
               <div key={amenity.id} className="amenity-clean-row">
                 <div className="amenity-info-col">
-                  <div className="amenity-name-clean">{amenity.name}</div>
+                  <div className="amenity-name-clean">
+                    <span style={{ marginRight: '6px' }}>{amenity.icon || '✨'}</span>
+                    {amenity.name}
+                  </div>
                   <div className="amenity-specs-clean">
-                    {amenity.slotDurationHours || 1}-hour slots · max {amenity.maxBookingsPerDay || 2} a day · 48 hours notice
+                    {amenity.slotDurationHours || 2}-hour slots · max {amenity.maxBookingsPerDay || 1} a day · {noticeText}
                   </div>
                 </div>
 
@@ -263,8 +324,9 @@ export default function Settings() {
                         setEditingAmenityId(null)
                       } else {
                         setEditingAmenityId(amenity.id)
-                        setSlotDuration(amenity.slotDurationHours || 1)
-                        setMaxBookings(amenity.maxBookingsPerDay || 2)
+                        setSlotDuration(amenity.slotDurationHours || 2)
+                        setMaxBookings(amenity.maxBookingsPerDay || 1)
+                        setAdvanceNotice(amenity.advanceNoticeHours ?? 48)
                       }
                     }}
                   >
@@ -275,10 +337,12 @@ export default function Settings() {
                 {isEditing && (
                   <div className="inline-amenity-edit-panel">
                     <div className="inline-form-field">
-                      <label>Slot duration (hours)</label>
+                      <label>Slot duration</label>
                       <select value={slotDuration} onChange={e => setSlotDuration(e.target.value)}>
                         <option value="1">1 hour</option>
                         <option value="2">2 hours</option>
+                        <option value="3">3 hours</option>
+                        <option value="4">4 hours</option>
                       </select>
                     </div>
                     <div className="inline-form-field">
@@ -291,13 +355,33 @@ export default function Settings() {
                         onChange={e => setMaxBookings(e.target.value)} 
                       />
                     </div>
-                    <button 
-                      className="btn-primary-green btn-sm"
-                      onClick={() => handleSaveAmenity(amenity.id)}
-                      disabled={updating}
-                    >
-                      Save rules
-                    </button>
+                    <div className="inline-form-field">
+                      <label>Advance notice cutoff</label>
+                      <select value={advanceNotice} onChange={e => setAdvanceNotice(e.target.value)}>
+                        <option value="0">None (book same day)</option>
+                        <option value="24">24 hours ahead</option>
+                        <option value="48">48 hours ahead</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                      <button 
+                        className="btn-primary-green btn-sm"
+                        onClick={() => handleSaveAmenity(amenity.id)}
+                        disabled={updating}
+                      >
+                        Save rules
+                      </button>
+                      {amenity.id !== 'kitchen' && (
+                        <button 
+                          className="btn-outline-pill-sm"
+                          style={{ borderColor: '#ef4444', color: '#ef4444' }}
+                          onClick={() => handleDeleteAmenity(amenity.id)}
+                          disabled={updating}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

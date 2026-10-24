@@ -3655,7 +3655,53 @@ select.input {
   line-height: 1.6;
 }
 
-/* 3. Kitchen Page Specific */
+/* 3. Amenities Page Specific */
+.amenity-tabs-capsules-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.amenity-pill-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 150ms ease;
+  border: 1.5px solid #d4d4d8;
+  background: #ffffff;
+  color: #18181b;
+}
+
+.amenity-pill-capsule:hover {
+  border-color: #18181b;
+}
+
+.amenity-pill-capsule.active-pill {
+  background: #18181b;
+  color: #ffffff;
+  border-color: #18181b;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.amenity-pill-capsule.inactive-pill {
+  background: #ffffff;
+  color: #57534e;
+  border-color: #d4d4d8;
+}
+
+.amenity-pill-capsule .pill-icon {
+  font-size: 15px;
+}
+
 .kitchen-yellow-notice-card {
   background: #fef9db;
   border: 1.5px solid #f9e79f;
