@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "roomie-app-41713"
+  },
+  "targets": {
+    "roomie-app-41713": {
+      "hosting": {
+        "theroomie": [
+          "theroomie"
+        ]
+      }
+    }
+  }
+}
