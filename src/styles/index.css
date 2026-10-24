@@ -1242,42 +1242,68 @@ select.input {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px 4px;
-  border-radius: var(--radius-sm);
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 4px;
+  border-radius: var(--radius-md);
+  background: #1a1e2d;
+  border: 1.5px solid var(--color-border);
   text-align: center;
+  transition: all var(--transition-fast);
 }
 
-.day-score-pill.free-high {
-  border-color: var(--color-success);
-  background: var(--color-success-dim);
+.day-score-pill.status-available {
+  border-color: rgba(52, 211, 153, 0.45);
+  background: rgba(52, 211, 153, 0.08);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.1);
 }
 
-.day-score-pill.free-mid {
-  border-color: var(--color-warning);
-  background: var(--color-warning-dim);
+.day-score-pill.status-partial {
+  border-color: rgba(251, 191, 36, 0.45);
+  background: rgba(251, 191, 36, 0.08);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.1);
 }
 
-.day-score-pill.free-low {
-  border-color: var(--color-danger);
-  background: var(--color-danger-dim);
+.day-score-pill.status-busy {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.08);
+  box-shadow: 0 0 10px rgba(248, 113, 113, 0.1);
 }
 
-.day-name {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.day-val {
-  font-size: 12px;
+.day-score-pill .day-name {
+  font-size: 11px;
   font-weight: 800;
+  text-transform: uppercase;
+  color: #ffffff;
+  letter-spacing: 0.05em;
 }
 
-.day-desc {
-  font-size: 8px;
-  color: var(--color-text-muted);
+.status-pill-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+}
+
+.badge-available {
+  background: rgba(52, 211, 153, 0.2);
+  color: #34d399;
+}
+
+.badge-partial {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.badge-busy {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+}
+
+.day-hours-desc {
+  font-size: 9px;
+  color: #8b92b0;
+  font-weight: 500;
 }
 
 .card-header-action {

@@ -3,7 +3,7 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { useAuth } from '../context/AuthContext'
 import { useGroup } from '../context/GroupContext'
-import { DAYS_OF_WEEK, autoDistributeChores, calculateMemberFreeScore } from '../utils/choreScheduler'
+import { DAYS_OF_WEEK, autoDistributeChores, calculateMemberFreeScore, getMemberDayAvailability } from '../utils/choreScheduler'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 export default function Schedule() {
@@ -238,21 +238,22 @@ export default function Schedule() {
 
       {/* Daily Free-Time Heat Map */}
       <div className="card">
-        <h3 className="card-title">Weekly Free Windows</h3>
-        <p className="card-subtitle">Estimated availability score (out of 10) for chores</p>
+        <h3 className="card-title">Weekly Availability</h3>
+        <p className="card-subtitle">Free (Green) • Partial Day (Yellow) • Busy (Red)</p>
 
         <div className="days-score-grid">
           {DAYS_OF_WEEK.map(day => {
-            const score = calculateMemberFreeScore(currentMemberSchedule, day)
-            let scoreClass = 'free-high'
-            if (score < 4) scoreClass = 'free-low'
-            else if (score < 7) scoreClass = 'free-mid'
+            const avail = getMemberDayAvailability(currentMemberSchedule, day)
 
             return (
-              <div key={day} className={`day-score-pill ${scoreClass}`}>
+              <div key={day} className={`day-score-pill status-${avail.status}`}>
                 <span className="day-name">{day.slice(0, 3)}</span>
-                <span className="day-val">{score}/10</span>
-                <small className="day-desc">{score < 5 ? 'Busy' : 'Available'}</small>
+                <span className={`status-pill-badge badge-${avail.status}`}>
+                  {avail.label}
+                </span>
+                {avail.busyHours > 0 && (
+                  <small className="day-hours-desc">{avail.busyHours}h booked</small>
+                )}
               </div>
             )
           })}

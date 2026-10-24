@@ -87,6 +87,55 @@ export function calculateMemberFreeScore(scheduleList = [], dayName) {
 }
 
 /**
+ * Determines whether a member is Available (green), Partial day (yellow), or Busy (red) on a given day.
+ */
+export function getMemberDayAvailability(scheduleList = [], dayName) {
+  const commitments = scheduleList.filter(s => s.day.toLowerCase() === dayName.toLowerCase())
+  if (commitments.length === 0) {
+    return {
+      status: 'available', // Green
+      label: 'Free',
+      busyHours: 0
+    }
+  }
+
+  let totalBusyHours = 0
+  for (const c of commitments) {
+    const [startH, startM] = (c.startTime || '09:00').split(':').map(Number)
+    const [endH, endM] = (c.endTime || '17:00').split(':').map(Number)
+    let duration = (endH + endM / 60) - (startH + startM / 60)
+    if (c.mode === 'offline') {
+      const bufferHours = ((c.travelBuffer || 30) * 2) / 60
+      duration += bufferHours
+    }
+    totalBusyHours += Math.max(0, duration)
+  }
+
+  // If busy for 5.5+ hours (like Ninaad's full-day lectures), mark as Busy (Red)
+  // If busy for partial day (between 1 and 5.5 hours, like Steve's 3hr class or church), mark as Partial (Yellow)
+  // Otherwise Available (Green)
+  if (totalBusyHours >= 5.5) {
+    return {
+      status: 'busy', // Red
+      label: 'Busy',
+      busyHours: Math.round(totalBusyHours * 10) / 10
+    }
+  } else if (totalBusyHours > 0) {
+    return {
+      status: 'partial', // Yellow
+      label: 'Partial',
+      busyHours: Math.round(totalBusyHours * 10) / 10
+    }
+  }
+
+  return {
+    status: 'available',
+    label: 'Free',
+    busyHours: 0
+  }
+}
+
+/**
  * Smart Chore Assignment Algorithm:
  * - Distributes chores fairly among flatmates
  * - Respects gender boundaries (e.g. Boys' Room -> boy, Girls' Room -> girl)
