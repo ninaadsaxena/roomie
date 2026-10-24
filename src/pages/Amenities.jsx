@@ -174,8 +174,9 @@ export default function Amenities() {
     <div className="page-content">
       <div className="section-header">
         <div>
+          <span className="hero-eyebrow" style={{ marginBottom: '6px', display: 'block' }}>SHARED LIVING, SORTED.</span>
           <h2 className="page-title">🍳 Kitchen & Amenities</h2>
-          <p className="page-subtitle">Reserve cooking time • 48h Advance Transparency</p>
+          <p className="page-subtitle">Reserve cooking time • 48-Hour advance transparency so flatmates never clash</p>
         </div>
       </div>
 

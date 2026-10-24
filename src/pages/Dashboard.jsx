@@ -163,6 +163,7 @@ export default function Dashboard() {
           <div className="calendar-brand-heading">
             <span className="cal-icon">🗓️</span>
             <div>
+              <span className="hero-eyebrow" style={{ marginBottom: '4px', display: 'block' }}>SHARED LIVING, SORTED.</span>
               <h2 className="cal-main-title">MONTHLY CHORE & BIN ROTATION CALENDAR</h2>
               <p className="cal-sub-title">Fair 3-week rotation based on flatmates' availability</p>
             </div>
@@ -172,7 +173,7 @@ export default function Dashboard() {
             <button className="btn-nav-month" onClick={handlePrevMonth} title="Previous Month">◀</button>
             <span className="current-month-display">{format(currentMonthDate, 'MMMM yyyy')}</span>
             <button className="btn-nav-month" onClick={handleNextMonth} title="Next Month">▶</button>
-            <button className="btn-quick-october" onClick={handleResetToOctober}>Sample Oct</button>
+            <button className="btn-quick-october" onClick={handleResetToOctober}>October 2026 Reference</button>
           </div>
         </div>
 

@@ -33,8 +33,8 @@ export default function Settings() {
         width: 180,
         margin: 2,
         color: {
-          dark: '#7c6af7',
-          light: '#1e2130'
+          dark: '#156d43',
+          light: '#ffffff'
         }
       }, (error) => {
         if (error) console.error("QR Code error:", error)
@@ -144,8 +144,9 @@ export default function Settings() {
     <div className="page-content">
       <div className="section-header">
         <div>
-          <h2 className="page-title">⚙️ Flat Settings & Admin</h2>
-          <p className="page-subtitle">{group.name} • Invite code & Rules</p>
+          <span className="hero-eyebrow" style={{ marginBottom: '6px', display: 'block' }}>SHARED LIVING, SORTED.</span>
+          <h2 className="page-title">⚙️ House & Flatmates</h2>
+          <p className="page-subtitle">{group.name} • Manage flat members, QR code, and house rules</p>
         </div>
       </div>
 

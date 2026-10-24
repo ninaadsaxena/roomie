@@ -258,10 +258,10 @@ export default function Onboarding() {
     <div className="onboarding-page">
       <div className="onboarding-card">
         <div className="onboarding-header">
-          <span className="onboarding-icon">🏠</span>
-          <h2>Welcome to Roomie, {user?.displayName || 'Friend'}!</h2>
+          <span className="hero-eyebrow" style={{ textAlign: 'center', display: 'block', marginBottom: '8px' }}>SHARED LIVING, SORTED.</span>
+          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '26px', fontWeight: '800', letterSpacing: '-0.03em', color: 'var(--color-text-primary)' }}>Set up your house</h2>
           <p className="onboarding-subtitle">
-            To start coordinating chores and Dublin bins, set up your flat.
+            Welcome, {user?.displayName || 'Friend'}! Coordinate chores, Dublin bins, and shared kitchen booking.
           </p>
         </div>
 
@@ -271,13 +271,13 @@ export default function Onboarding() {
           <div className="onboarding-choices">
             <button className="choice-card" onClick={() => setMode('create')}>
               <span className="choice-icon">✨</span>
-              <h3>Create a New Flat</h3>
-              <p>You'll be the Admin and can invite your flatmates with a quick QR code or invite code.</p>
+              <h3>Create a New House</h3>
+              <p>You'll be the Admin and can invite flatmates with a quick QR code or 6-character code.</p>
             </button>
 
             <button className="choice-card" onClick={() => setMode('join')}>
               <span className="choice-icon">🔑</span>
-              <h3>Join Existing Flat</h3>
+              <h3>Join with a Code</h3>
               <p>Already got an invite code or link from your flatmate? Enter it here to join.</p>
             </button>
           </div>

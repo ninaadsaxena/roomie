@@ -92,8 +92,9 @@ export default function Bins() {
     <div className="page-content">
       <div className="section-header">
         <div>
+          <span className="hero-eyebrow" style={{ marginBottom: '6px', display: 'block' }}>SHARED LIVING, SORTED.</span>
           <h2 className="page-title">🗑️ Dublin Waste & Bins</h2>
-          <p className="page-subtitle">Alternating Tuesday collections • Dublin Schedule</p>
+          <p className="page-subtitle">Alternating Tuesday collections • Dublin 7 Rotation Schedule</p>
         </div>
         {isAdmin && (
           <button className="btn btn-secondary btn-sm" onClick={switchStartingType} disabled={updating}>

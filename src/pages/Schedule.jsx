@@ -173,8 +173,9 @@ export default function Schedule() {
     <div className="page-content">
       <div className="section-header">
         <div>
+          <span className="hero-eyebrow" style={{ marginBottom: '6px', display: 'block' }}>SHARED LIVING, SORTED.</span>
           <h2 className="page-title">📅 Schedules & Availability</h2>
-          <p className="page-subtitle">University classes & offline hours used to balance chores</p>
+          <p className="page-subtitle">University classes & offline hours used to fairly balance chores</p>
         </div>
         <button 
           className="btn btn-primary btn-sm"
