@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useGroup } from '../context/GroupContext'
 import { logOut } from '../firebase/auth'
@@ -8,7 +8,7 @@ export default function Navbar() {
   const { user } = useAuth()
   const { group } = useGroup()
   const navigate = useNavigate()
-  const [theme, setTheme] = useState(() => localStorage.getItem('roomie-theme') || 'dark')
+  const [theme, setTheme] = useState(() => localStorage.getItem('roomie-theme') || 'light')
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -27,13 +27,38 @@ export default function Navbar() {
   return (
     <header className="navbar">
       <div className="navbar-content">
-        <Link to="/" className="navbar-brand">
-          <span className="brand-icon">🏠</span>
-          <span className="brand-title">Roomie</span>
-          {group && <span className="group-badge">{group.name}</span>}
-        </Link>
+        <div className="navbar-left">
+          <Link to="/" className="navbar-brand">
+            <span className="brand-logo-text">Roomie</span>
+          </Link>
+
+          {/* Desktop Navigation Links */}
+          <nav className="desktop-nav-links">
+            <NavLink to="/" end className={({ isActive }) => `desktop-nav-item ${isActive ? 'active' : ''}`}>
+              Calendar
+            </NavLink>
+            <NavLink to="/amenities" className={({ isActive }) => `desktop-nav-item ${isActive ? 'active' : ''}`}>
+              Kitchen
+            </NavLink>
+            <NavLink to="/schedule" className={({ isActive }) => `desktop-nav-item ${isActive ? 'active' : ''}`}>
+              Schedule
+            </NavLink>
+            <NavLink to="/bins" className={({ isActive }) => `desktop-nav-item ${isActive ? 'active' : ''}`}>
+              Dublin Bins
+            </NavLink>
+            <NavLink to="/settings" className={({ isActive }) => `desktop-nav-item ${isActive ? 'active' : ''}`}>
+              House
+            </NavLink>
+          </nav>
+        </div>
 
         <div className="navbar-actions">
+          {group && (
+            <Link to="/settings" className="nav-house-pill" title="House Settings">
+              {group.name}
+            </Link>
+          )}
+
           <button 
             className="theme-toggle-btn" 
             onClick={toggleTheme} 
